@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PDTI · 客户PD人格测评</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-dark: #056E50;
+            --color-light: #00E6DC;
+            --color-text: #013F31;
+            --color-text-light: rgba(1, 63, 49, 0.7);
+            --color-text-muted: rgba(1, 63, 49, 0.5);
+            --color-card-bg: rgba(255, 255, 255, 0.92);
+            --color-card-border: rgba(255, 255, 255, 0.6);
+            --color-btn-primary: #056E50;
+            --color-btn-primary-hover: #0B594C;
+            --color-btn-text: #00E6DC;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            color: var(--color-text);
+            overflow-x: hidden;
+        }
+
+        body {
+            background: linear-gradient(135deg, #056E50 0%, #0B8C6E 30%, #00D4C8 70%, #00E6DC 100%);
+            background-attachment: fixed;
+        }
+
+        .bg-overlay {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(0, 230, 220, 0.15) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 80%, rgba(5, 110, 80, 0.2) 0%, transparent 60%);
+        }
+
+        .particles {
+            position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+        }
+        .particle {
+            position: absolute; width: 4px; height: 4px;
+            background: rgba(255, 255, 255, 0.5); border-radius: 50%;
+            animation: floatUp 12s linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            15% { opacity: 0.8; }
+            85% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        .app-container {
+            position: relative; z-index: 2; max-width: 720px; margin: 0 auto;
+            padding: 20px; min-height: 100vh; display: flex; flex-direction: column;
+        }
+
+        .page { display: none; flex: 1; flex-direction: column; animation: fadeIn 0.5s ease; }
+        .page.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+        /* ===== 首页 ===== */
+        .home-page { justify-content: center; align-items: center; text-align: center; padding: 40px 16px; }
+        .logo-area { margin-bottom: 32px; }
+        .logo-img {
+            width: 160px; height: auto; margin: 0 auto 20px;
+            filter: brightness(0) invert(1) drop-shadow(0 4px 16px rgba(0,0,0,0.15));
+        }
+        .main-title {
+            font-size: clamp(26px, 6vw, 40px); font-weight: 900; line-height: 1.25;
+            margin-bottom: 12px; color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .subtitle {
+            font-size: 16px; color: rgba(255,255,255,0.85); margin-bottom: 40px;
+            line-height: 1.7; max-width: 440px; font-weight: 400;
+        }
+        .start-btn {
+            background: #ffffff; color: var(--color-btn-primary); border: none;
+            padding: 18px 56px; font-size: 18px; font-weight: 700;
+            border-radius: 50px; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            font-family: inherit; letter-spacing: 2px;
+        }
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+            background: #f0fffc;
+        }
+        .start-btn:active { transform: translateY(0); }
+
+        /* ===== 测试页 ===== */
+        .quiz-page { padding: 16px 0 32px; }
+        .quiz-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding: 0 8px;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.3);
+            color: #ffffff; padding: 8px 18px; border-radius: 20px;
+            cursor: pointer; font-size: 14px; transition: all 0.3s;
+            font-family: inherit; backdrop-filter: blur(10px);
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.4); }
+        .progress-area { flex: 1; margin: 0 16px; }
+        .progress-text {
+            font-size: 13px; color: rgba(255,255,255,0.9); margin-bottom: 6px;
+            text-align: right; font-weight: 500;
+        }
+        .progress-bar { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+        .progress-fill {
+            height: 100%; background: #ffffff; border-radius: 2px;
+            transition: width 0.4s ease; box-shadow: 0 0 8px rgba(255,255,255,0.3);
+        }
+
+        .question-card {
+            background: var(--color-card-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--color-card-border); border-radius: 20px;
+            padding: 28px 24px; margin-bottom: 16px;
+            animation: slideIn 0.4s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+        .dimension-tag {
+            display: inline-block; background: var(--color-btn-primary); color: #ffffff;
+            padding: 5px 14px; border-radius: 10px; font-size: 12px;
+            font-weight: 700; margin-bottom: 16px; letter-spacing: 0.5px;
+        }
+        .question-text {
+            font-size: 18px; font-weight: 700; line-height: 1.65;
+            margin-bottom: 24px; color: var(--color-text);
+        }
+
+        .options-list { display: flex; flex-direction: column; gap: 10px; }
+        .option-item {
+            background: rgba(5, 110, 80, 0.06); border: 1.5px solid rgba(5, 110, 80, 0.12);
+            border-radius: 14px; padding: 16px 18px; cursor: pointer;
+            transition: all 0.25s ease; display: flex; align-items: flex-start; gap: 14px;
+            position: relative;
+        }
+        .option-item:hover {
+            background: rgba(5, 110, 80, 0.1); border-color: rgba(5, 110, 80, 0.3);
+            transform: translateX(3px);
+        }
+        .option-item.selected {
+            background: rgba(0, 230, 220, 0.15); border-color: var(--color-dark);
+            box-shadow: 0 0 0 1px var(--color-dark);
+        }
+        .option-letter {
+            width: 30px; height: 30px; min-width: 30px;
+            border: 2px solid rgba(5, 110, 80, 0.25); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: var(--color-dark);
+            transition: all 0.25s; background: rgba(255,255,255,0.5);
+        }
+        .option-item:hover .option-letter {
+            border-color: var(--color-dark); background: rgba(0, 230, 220, 0.2);
+        }
+        .option-item.selected .option-letter {
+            border-color: var(--color-dark); background: var(--color-dark); color: #ffffff;
+        }
+        .option-text {
+            font-size: 15px; line-height: 1.6; color: var(--color-text);
+            font-weight: 400; padding-top: 4px;
+        }
+
+        .nav-btns { display: flex; justify-content: space-between; margin-top: 20px; padding: 0 8px; gap: 12px; }
+        .nav-btn {
+            padding: 14px 32px; border-radius: 12px; font-size: 15px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s; font-family: inherit; border: none;
+            flex: 1;
+        }
+        .nav-btn-prev {
+            background: rgba(255,255,255,0.25); color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);
+        }
+        .nav-btn-prev:hover { background: rgba(255,255,255,0.4); }
+        .nav-btn-next {
+            background: #ffffff; color: var(--color-btn-primary);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1); font-weight: 700;
+        }
+        .nav-btn-next:hover {
+            transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            background: #f0fffc;
+        }
+        .nav-btn-next:disabled {
+            opacity: 0.35; cursor: not-allowed; transform: none;
+            box-shadow: none; background: rgba(255,255,255,0.5); color: var(--color-text-muted);
+        }
+
+        /* ===== 结果页 ===== */
+        .result-page { padding: 16px 0 32px; }
+        .result-hero {
+            text-align: center; padding: 32px 16px 24px; animation: scaleIn 0.6s ease;
+        }
+        .result-type-zh {
+            font-size: 32px; font-weight: 900; margin-bottom: 8px; color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .result-type-en {
+            font-size: 15px; color: rgba(255,255,255,0.9); letter-spacing: 4px;
+            margin-bottom: 16px; font-weight: 600;
+        }
+        .result-quote {
+            font-size: 16px; color: rgba(255,255,255,0.85); font-style: italic;
+            line-height: 1.75; max-width: 480px; margin: 0 auto 24px; padding: 0 16px;
+            font-weight: 400;
+        }
+        .result-quote::before {
+            content: '"'; font-size: 36px; color: rgba(255,255,255,0.5);
+            line-height: 0; vertical-align: -16px; margin-right: 4px;
+        }
+
+        .result-section {
+            background: var(--color-card-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--color-card-border); border-radius: 18px;
+            padding: 24px; margin-bottom: 14px; animation: slideIn 0.5s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+        .result-section-title {
+            font-size: 16px; font-weight: 700; color: var(--color-btn-primary);
+            margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+        }
+        .result-section-title::before {
+            content: ''; width: 4px; height: 16px;
+            background: var(--color-btn-primary); border-radius: 2px;
+        }
+        .result-section-text {
+            font-size: 15px; color: var(--color-text); line-height: 1.75;
+            font-weight: 400;
+        }
+        .result-section-text strong {
+            color: var(--color-btn-primary); font-weight: 700;
+        }
+
+        .score-bars { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
+        .score-bar-item { display: flex; align-items: center; gap: 12px; }
+        .score-bar-label {
+            width: 90px; font-size: 13px; color: var(--color-text-light);
+            text-align: right; flex-shrink: 0; font-weight: 500;
+        }
+        .score-bar-track {
+            flex: 1; height: 10px; background: rgba(5, 110, 80, 0.1);
+            border-radius: 5px; overflow: hidden; position: relative;
+        }
+        .score-bar-fill {
+            height: 100%; border-radius: 5px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .score-bar-value {
+            width: 32px; font-size: 14px; font-weight: 700;
+            color: var(--color-btn-primary); text-align: left; flex-shrink: 0;
+        }
+        .score-bar-fill.echoer { background: linear-gradient(90deg, #6B7280, #9CA3AF); }
+        .score-bar-fill.pleaser { background: linear-gradient(90deg, #D97706, #F59E0B); }
+        .score-bar-fill.soloer { background: linear-gradient(90deg, #DB2777, #EC4899); }
+        .score-bar-fill.partner { background: linear-gradient(90deg, #056E50, #00E6DC); }
+
+        .radar-area { display: flex; justify-content: center; margin: 16px 0; }
+        .radar-chart { width: 260px; height: 260px; }
+
+        .dimension-tags {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px;
+        }
+        .dimension-tag-item {
+            font-size: 11px; padding: 4px 10px; border-radius: 8px; font-weight: 600;
+        }
+
+        .action-area {
+            display: flex; flex-direction: column; gap: 12px;
+            margin-top: 28px; padding: 0 8px;
+        }
+        .action-btn {
+            width: 100%; padding: 16px; border-radius: 14px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            transition: all 0.3s; font-family: inherit; border: none;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .action-btn-primary {
+            background: #ffffff; color: var(--color-btn-primary);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .action-btn-primary:hover {
+            transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            background: #f0fffc;
+        }
+        .action-btn-secondary {
+            background: rgba(255,255,255,0.2); color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);
+        }
+        .action-btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .restart-btn { margin-top: 12px; text-align: center; }
+        .restart-btn button {
+            background: none; border: none; color: rgba(255,255,255,0.7);
+            font-size: 14px; cursor: pointer; padding: 10px 20px;
+            transition: color 0.3s; font-family: inherit;
+        }
+        .restart-btn button:hover { color: #ffffff; }
+
+        .toast {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #ffffff; color: var(--color-btn-primary); padding: 12px 28px;
+            border-radius: 12px; font-size: 14px; font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1000;
+            opacity: 0; transition: all 0.4s ease; pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .copy-modal {
+            position: fixed; inset: 0; z-index: 100;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        }
+        .copy-modal.active { display: flex; }
+        .copy-modal-content {
+            background: #ffffff; border-radius: 20px; padding: 24px;
+            max-width: 90%; width: 480px; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: scaleIn 0.3s ease;
+        }
+        .copy-modal-title {
+            font-size: 18px; font-weight: 700; color: var(--color-text);
+            margin-bottom: 16px; text-align: center;
+        }
+        .copy-textarea {
+            width: 100%; min-height: 200px; padding: 16px;
+            border: 1.5px solid rgba(5, 110, 80, 0.15); border-radius: 12px;
+            font-size: 14px; line-height: 1.7; color: var(--color-text);
+            font-family: inherit; resize: none; background: rgba(5, 110, 80, 0.03);
+            margin-bottom: 16px;
+        }
+        .copy-textarea:focus {
+            outline: none; border-color: var(--color-dark);
+        }
+        .copy-modal-btns { display: flex; gap: 12px; }
+        .copy-modal-btns .action-btn { flex: 1; padding: 12px; }
+
+        @media (max-width: 600px) {
+            .logo-img { width: 130px; }
+            .question-card { padding: 22px 18px; }
+            .option-item { padding: 14px 16px; }
+            .result-section { padding: 20px 18px; }
+            .nav-btns { flex-direction: column; }
+            .nav-btn { width: 100%; }
+            .main-title { font-size: 26px; }
+            .result-type-zh { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div class="particles" id="particles"></div>
+
+    <div class="app-container">
+        <!-- 首页 -->
+        <div class="page home-page active" id="homePage">
+            <div class="logo-area">
+                <img src="data:image/png;base64,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" class="logo-img" alt="SYLOON">
+            </div>
+            <h1 class="main-title">你是哪种类型的<br>客户PD？</h1>
+            <p class="subtitle">10个维度 · 20道场景题<br>发现你的服务人格DNA</p>
+            <button class="start-btn" onclick="startQuiz()">开始测试</button>
+        </div>
+
+        <!-- 测试页 -->
+        <div class="page quiz-page" id="quizPage">
+            <div class="quiz-header">
+                <button class="back-btn" onclick="goHome()">← 返回</button>
+                <div class="progress-area">
+                    <div class="progress-text" id="progressText">1 / 20</div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:5%"></div></div>
+                </div>
+                <div style="width:70px"></div>
+            </div>
+            <div class="question-card" id="questionCard"></div>
+            <div class="nav-btns">
+                <button class="nav-btn nav-btn-prev" id="prevBtn" onclick="prevQuestion()">上一题</button>
+                <button class="nav-btn nav-btn-next" id="nextBtn" onclick="nextQuestion()" disabled>下一题</button>
+            </div>
+        </div>
+
+        <!-- 结果页 -->
+        <div class="page result-page" id="resultPage">
+            <div class="result-hero" id="resultHero"></div>
+            <div id="resultContent"></div>
+            <div class="action-area">
+                <button class="action-btn action-btn-primary" onclick="copyResultText()">
+                    <span>📋</span> 一键复制文案
+                </button>
+                <button class="action-btn action-btn-secondary" onclick="shareResult()">
+                    <span>📤</span> 分享结果
+                </button>
+            </div>
+            <div class="restart-btn"><button onclick="restartQuiz()">↻ 重新测试</button></div>
+        </div>
+    </div>
+
+    <div class="copy-modal" id="copyModal" onclick="closeCopyModal(event)">
+        <div class="copy-modal-content" onclick="event.stopPropagation()">
+            <div class="copy-modal-title">复制你的PDTI人格报告</div>
+            <textarea class="copy-textarea" id="copyTextarea" readonly></textarea>
+            <div class="copy-modal-btns">
+                <button class="action-btn action-btn-secondary" onclick="closeCopyModal()">取消</button>
+                <button class="action-btn action-btn-primary" onclick="doCopy()">📋 复制到剪贴板</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const questions = [
+            {
+                num: 1,
+                text: "客户发来一段长语音，说'上次那个方案有几个地方不太对，你再看看'。你通常会：",
+                options: [
+                    { text: "先回复客户'好的我马上看看'，然后把语音转文字同步给项目群", type: "过度承诺型" },
+                    { text: "立即回复客户确认收到，并保证会尽快处理", type: "内耗努力型" },
+                    { text: "反复听语音，自行分析可能存在的问题，完成完整方案后再和客户沟通", type: "内耗努力型" },
+                    { text: "主动与客户沟通，逐条确认具体不满意点及修改优先级", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 2,
+                text: "当客户在会议上提出一个你不太确定的专业问题时，你更倾向于：",
+                options: [
+                    { text: "当场回答'这个我不太清楚，回头问下专业人士再答复您'", type: "被动响应型" },
+                    { text: "虽然不确定，但还是先回复'应该没问题，我回头确认后给您准信'", type: "过度承诺型" },
+                    { text: "凭自己的经验向客户解释，即使可能不完全对", type: "内耗努力型" },
+                    { text: "坦诚地说'这块我需要核实，明天上午10点前给您准确回复，同时我可以附上相关数据供您参考'", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 3,
+                text: "项目进行到一半，你发现某个关键物料可能要延迟到货。你会在什么时候通知客户？",
+                options: [
+                    { text: "默默加班想办法，试图在客户发现之前解决，确定延迟后再告知客户也不晚", type: "内耗努力型" },
+                    { text: "先同步给内部同事，等客户来催的时候再告知", type: "被动响应型" },
+                    { text: "提前做好备选方案，将情况同步客户：'目前预计延迟X天，原因是……，我已经准备了两个预案，您倾向哪个？'", type: "客户伙伴型" },
+                    { text: "在有解决方案之前先告诉客户'有可能延迟，我正在协调'", type: "过度承诺型" }
+                ]
+            },
+            {
+                num: 4,
+                text: "客户每周都要你发一次进度报告，但你发现他从来不看。你会：",
+                options: [
+                    { text: "直接询问客户偏好，给出更高效的沟通方案", type: "客户伙伴型" },
+                    { text: "自行决定降低报告发送的频次，每周一次调整为两周一次", type: "过度承诺型" },
+                    { text: "按既定流程继续执行，等客户叫停再说", type: "被动响应型" },
+                    { text: "花更多时间制作更加详尽的报告，相信客户总会看的", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 5,
+                text: "客户投诉一批产品外观有瑕疵，经查是工厂包装环节失误。你第一时间会：",
+                options: [
+                    { text: "向客户解释'这是工厂包装的问题，我已经和他们追责了'", type: "被动响应型" },
+                    { text: "道歉并承诺'是我们的问题，马上安排重做，运费我们承担'，不提根因分析和预防措施", type: "过度承诺型" },
+                    { text: "立即去包装工厂了解情况，写了一份详细的改进报告，然后再回复客户", type: "内耗努力型" },
+                    { text: "确认根因后及时反馈客户，并给出解决方案与优缺点，以供客户平衡选择。事情得到解决后提交整改报告确保下次不再发生", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 6,
+                text: "当客户因为一个小问题大发雷霆时，你内心的第一反应是：",
+                options: [
+                    { text: "赶紧安抚，不管对错先道歉，先平息客户怒火再说", type: "过度承诺型" },
+                    { text: "冷静分析客户反常情绪背后的深层原因，针对性解决客户真正的忧虑点", type: "客户伙伴型" },
+                    { text: "觉得客户小题大做，有点委屈", type: "被动响应型" },
+                    { text: "因为客户的否定陷入自我怀疑，马上在自己身上找原因", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 7,
+                text: "你发现客户最近在社交媒体上发布了一款新产品预告，但并没有跟你透露任何信息。你会：",
+                options: [
+                    { text: "自己花时间研究客户的新产品，制作市场分析报告发送客户", type: "内耗努力型" },
+                    { text: "尊重客户信息，等待客户主动沟通", type: "被动响应型" },
+                    { text: "积极点赞评论互动，但不过多深入", type: "过度承诺型" },
+                    { text: "主动私信或电话，推荐针对性的新材料等资源信息，并询问客户是否需要", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 8,
+                text: "客户连续两个月订单量下降，但没跟你说原因。你会：",
+                options: [
+                    { text: "以非业务姿态关心客户近况，如果对方态度不主动就不再进行深入沟通", type: "过度承诺型" },
+                    { text: "觉得可能是淡季，正常波动，不去追问", type: "被动响应型" },
+                    { text: "主动约客户喝咖啡或视频聊一次，了解他目前的业务挑战，探索新的合作价值点", type: "客户伙伴型" },
+                    { text: "不和客户沟通，而是自行分析原因，制作'客户流失预警报告'发给领导", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 9,
+                text: "为了赶客户交期，你需要采购部特批加急采购一款长周期物料。采购经理表示'排期满了，插不了'。你会：",
+                options: [
+                    { text: "如实向客户反馈情况，告知可能要延迟", type: "被动响应型" },
+                    { text: "先了解采购的困难是什么，然后提出一个双赢方案，比如协调另一个项目排期，和客户沟通分批次交付等", type: "客户伙伴型" },
+                    { text: "用项目很重要等理由不断恳求采购特批加急", type: "过度承诺型" },
+                    { text: "制作详细的加急申请报告，事无巨细地列举理由，但未和采购沟通难点", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 10,
+                text: "当内部多个部门（采购、质检、仓库）对同一个客户需求有不同意见时，你通常：",
+                options: [
+                    { text: "等各方讨论统一共识后，再开始执行", type: "被动响应型" },
+                    { text: "先安抚各方情绪，自己揽下协调的任务", type: "过度承诺型" },
+                    { text: "埋头研究试图找到一个所有人都满意的完美方案", type: "内耗努力型" },
+                    { text: "拉一个跨部门短会，先对齐客户的核心目标，引导大家聚焦'怎样做对客户最好'，最后形成共识方案", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 11,
+                text: "客户要求降价10%，否则考虑换供应商。你会：",
+                options: [
+                    { text: "了解竞争对手的报价和服务内容，然后帮客户算'综合拥有成本'，证明我们的总成本更低。同时提出'如果量能稳定，我们可以优化包装或物流来降低成本'", type: "客户伙伴型" },
+                    { text: "跟客户说'我尽量帮你争取'，然后回来求老板降价", type: "过度承诺型" },
+                    { text: "立即满足客户要求，向老板申请折扣", type: "被动响应型" },
+                    { text: "制作一份详细的成本拆解表，试图说服客户", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 12,
+                text: "你发现现有的一款常规物料，市场上出现了性价比更高的替代品。你会：",
+                options: [
+                    { text: "询问采购原因，对方给出回答后不再深入追问", type: "过度承诺型" },
+                    { text: "把信息转发给采购，让他们去了解原因", type: "被动响应型" },
+                    { text: "主动收集替代品的性能、价格、供货稳定性数据，整理成对比报告，建议采购是否在下一个订单中试用，同时跟客户沟通'我们正在优化成本，可能会带来更好的价格'", type: "客户伙伴型" },
+                    { text: "购买市面上的样品，对比赛龙产品制作一份对比分析报告，但没跟客户沟通", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 13,
+                text: "除了业务往来，你和客户个人之间的关系是怎样的？",
+                options: [
+                    { text: "逢年过节发祝福，偶尔社交媒体互动，但从不过界", type: "过度承诺型" },
+                    { text: "仅限于工作群和邮件，很少私下联系", type: "被动响应型" },
+                    { text: "经常给客户寄送自己精心挑选的礼物、写长信", type: "内耗努力型" },
+                    { text: "记得客户的生日、重要家庭事件，会适时寄送小礼物或简短的手写卡片；出差时会约吃饭聊聊近况，但保持适度分寸", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 14,
+                text: "当客户向你抱怨公司其他同事服务不好时，你会：",
+                options: [
+                    { text: "先认真倾听，主动表示愿意协调处理问题，并保证会跟进优化内部工作", type: "客户伙伴型" },
+                    { text: "顺着客户的情绪附和，给客户认同感与倾听感", type: "被动响应型" },
+                    { text: "替同事解释：'可能他太忙了，我帮您催催'", type: "过度承诺型" },
+                    { text: "觉得同事做事方式有问题，立马向Ta反馈，或者写邮件向领导投诉", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 15,
+                text: "你对自己负责的客户所在行业（如礼赠文具、快时尚生活方式等）的了解程度：",
+                options: [
+                    { text: "专注于客户的针对性需求，对宏观行业了解不多", type: "被动响应型" },
+                    { text: "会关注客户行业的资讯新闻，但停留在浏览层面", type: "过度承诺型" },
+                    { text: "订阅了大量行业公众号、买了课程，但学完没有和客户交流", type: "内耗努力型" },
+                    { text: "定期阅读行业报告，参加线上研讨会，会主动和客户聊行业趋势，甚至给出前瞻性建议", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 16,
+                text: "当公司引入新的管理系统或流程时，你的态度是：",
+                options: [
+                    { text: "新系统的学习需要花费时间，觉得增加了自己的工作量", type: "被动响应型" },
+                    { text: "没有什么想法，赶紧学会上手运用就行", type: "过度承诺型" },
+                    { text: "主动研究新系统能如何帮自己更高效地为客户服务，并分享给团队", type: "客户伙伴型" },
+                    { text: "花大量时间研究新系统的所有功能，甚至自己写操作手册，但没考虑如何用于服务客户", type: "内耗努力型" }
+                ]
+            },
+            {
+                num: 17,
+                text: "同时有三个客户在催你，而且都是紧急事项。你通常会：",
+                options: [
+                    { text: "觉得自己压力大，一边抱怨一边干", type: "内耗努力型" },
+                    { text: "依据客户催促的态度快速排序项目优先级", type: "被动响应型" },
+                    { text: "全都答应'好的马上'，然后开始埋头赶工", type: "过度承诺型" },
+                    { text: "先花5分钟快速评估每件事的影响，然后给每个客户发送一条清晰的进度说明和承诺时间，同时协调内部资源共同推进", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 18,
+                text: "当你连续加班一周，身心俱疲时，你的工作质量会：",
+                options: [
+                    { text: "工作效率和质量明显下降，开始出错，但依然自己默默消化解决", type: "过度承诺型" },
+                    { text: "能够维持工作效率和质量，但情绪容易失控，将负面情绪传递给客户和团队同事", type: "被动响应型" },
+                    { text: "虽然工作错误百出，但觉得自己付出了这么多客户应该感动", type: "内耗努力型" },
+                    { text: "依然能保持专业，因为你知道客户不在乎你累不累，只在乎结果好不好。同时主动向上级申请支援或调整优先级", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 19,
+                text: "一个新项目启动时，你会做以下哪件事？",
+                options: [
+                    { text: "按照客户给的时间表执行，走一步看一步", type: "被动响应型" },
+                    { text: "列出主要里程碑和对应责任人，但没考虑风险", type: "过度承诺型" },
+                    { text: "列了一份长达几十项的风险清单，但没跟客户同步", type: "内耗努力型" },
+                    { text: "在启动会上就识别出3-5个潜在风险点，并提前准备好应对措施，同时跟客户同步风险点和预案", type: "客户伙伴型" }
+                ]
+            },
+            {
+                num: 20,
+                text: "客户提出一个看似简单的变更请求（比如换个颜色），你认为：",
+                options: [
+                    { text: "花大量时间评估技术可行性，写了一份详细的变更影响报告，但没跟客户沟通", type: "内耗努力型" },
+                    { text: "看到是简单请求，直接答应客户", type: "被动响应型" },
+                    { text: "确认是否有额外费用和交期影响，初步判断影响不大就答应", type: "过度承诺型" },
+                    { text: "确认费用和交期，并评估变更是否会连锁影响到其他环节，并主动提醒客户潜在风险", type: "客户伙伴型" }
+                ]
+            }
+        ];
+
+        const personalities = {
+            '被动响应型': {
+                en: 'The Echoer',
+                quote: '你是最可靠的信息高速公路，却忘了自己也可以是目的地。',
+                desc: '客户的每句话你都原封不动送达，工厂的每个反馈你都一字不差转述。你是组织里最高效的<strong>人肉路由器</strong>，确保信息不丢包、不延迟、不变形。但有时候，客户要的不是复读机，而是<strong>翻译官</strong>——把"做不了"翻译成"我们可以一起想想别的办法"，把"有问题"翻译成"我已经在看了，这是进度"。你目前更像一个信息中转站，能够传递客户和内部的信息，但缺少主动判断、预判风险和兜底推进的意识。',
+                advantage: '你通常比较配合，能够完成基本信息传递，不容易擅自做决定。',
+                risk: '客户不需要一个只会传话的人，客户需要一个能帮他判断、推动和解决问题的人。如果长期停留在这个状态，客户会逐渐绕过你，直接找更能解决问题的人。',
+                evolve: '从"转述信息"升级为"判断信息"。每一次沟通时，不只是说"客户说了什么"，而是补充"我判断客户真正关心什么"。'
+            },
+            '过度承诺型': {
+                en: 'The Pleaser',
+                quote: '你是客户关系的恒温器，永远26℃，永远舒适，永远没什么记忆点。',
+                desc: '你擅长说"好的""没问题""我尽量"，像一块无限吸收压力的<strong>情绪海绵</strong>。客户永远不会对你发火，因为你在他们发火之前就已经道歉了。但"尽量"是最危险的词——它给了希望，却不给承诺。你害怕冲突，所以用模糊换和平，用妥协换时间。问题是，<strong>客户最终记住的不是谁最nice，而是谁最靠谱。</strong>',
+                advantage: '客户通常会觉得你态度好、响应快、愿意帮忙。',
+                risk: '过度承诺会透支信用。客户短期满意，不代表长期信任。真正的信任来自"承诺准确、交付稳定、风险透明"。',
+                evolve: '从"我尽量"到"我可以"，把讨好的能量，转化成承诺的分量。'
+            },
+            '内耗努力型': {
+                en: 'The Soloer',
+                quote: '你一个人就是一支军队，一场深夜的独角戏，一封没人打开的长邮件。',
+                desc: '你蹲过工厂，写过报告，熬过通宵，甚至为客户的新品做了三十页竞品分析，然后发现客户根本没问。你是<strong>苦情剧主角</strong>，把"我付出了多少"当成勋章，却忘了客户买的是结果，不是过程。你的努力像一封没有收件人的情书，<strong>写得很认真，却送得太随意。</strong>',
+                advantage: '你认真、负责、愿意钻研，是绝对的实干者。',
+                risk: '客户不一定关心你做了多少工作，客户更关心他的目标有没有被实现。如果努力方向不准，投入越多，成本越大。',
+                evolve: '从"我做了"到"您需要"，让努力被看见，让付出有回响。'
+            },
+            '客户伙伴型': {
+                en: 'The Partner',
+                quote: '你不是在对接客户，你是在经营一段关系。你不是在解决问题，你是在定义问题。',
+                desc: '客户说"方案不太对"，你先问"具体是哪三部分"；客户说"要降价"，你先算"综合成本"；客户还没发火，你已经看到了火源。你像一块<strong>提前校准的罗盘</strong>——不是等风暴来了才找方向，而是在平静时就画好了航线。你让客户觉得"这人懂我"，让团队觉得"这人扛事"，让自己觉得"这单我罩得住"。',
+                advantage: '你能站在客户视角思考，也能站在公司视角控制风险。你不是简单执行，而是在帮助客户和公司共同达成更好的结果。',
+                risk: '如果你的能力只停留在个人经验层面，团队无法复制。客户伙伴型PD不仅要自己做好，也要能沉淀方法，带动团队升级。',
+                evolve: '从"个人能解决问题"升级为"团队能复制方法"。把你的经验沉淀成模板、清单、案例和标准动作。'
+            }
+        };
+
+        const dimensionNames = ['沟通能力','进度管理','问题处理','主动服务','内部协调','成本意识','客户关系','学习成长','抗压能力','风险预判'];
+        const dimensionMap = {1:0,2:0,3:1,4:1,5:2,6:2,7:3,8:3,9:4,10:4,11:5,12:5,13:6,14:6,15:7,16:7,17:8,18:8,19:9,20:9};
+
+        let currentQ = 0;
+        let answers = new Array(20).fill(null);
+        let lastResult = null;
+
+        function initParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 12 + 's';
+                p.style.animationDuration = (8 + Math.random() * 8) + 's';
+                p.style.width = (2 + Math.random() * 3) + 'px';
+                p.style.height = p.style.width;
+                container.appendChild(p);
+            }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+        function goHome() { showPage('homePage'); }
+
+        function startQuiz() {
+            currentQ = 0; answers = new Array(20).fill(null);
+            showPage('quizPage'); renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQ];
+            const card = document.getElementById('questionCard');
+            const dimIndex = dimensionMap[q.num];
+            const dimName = dimensionNames[dimIndex];
+
+            card.innerHTML = `
+                <div class="dimension-tag">维度${dimIndex+1}：${dimName}</div>
+                <div class="question-text">${q.num}. ${q.text}</div>
+                <div class="options-list">
+                    ${q.options.map((opt,i) => `
+                        <div class="option-item ${answers[currentQ]===i ? 'selected' : ''}" onclick="selectOption(${i})">
+                            <div class="option-letter">${String.fromCharCode(65+i)}</div>
+                            <div class="option-text">${opt.text}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const progress = ((currentQ+1)/20)*100;
+            document.getElementById('progressText').textContent = `${currentQ+1} / 20`;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('prevBtn').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+            document.getElementById('nextBtn').textContent = currentQ === 19 ? '查看结果' : '下一题';
+            document.getElementById('nextBtn').disabled = answers[currentQ] === null;
+        }
+
+        function selectOption(index) {
+            answers[currentQ] = index;
+            document.querySelectorAll('.option-item').forEach((el,i) => el.classList.toggle('selected', i===index));
+            document.getElementById('nextBtn').disabled = false;
+            if (currentQ < 19) setTimeout(() => nextQuestion(), 350);
+        }
+
+        function prevQuestion() { if (currentQ > 0) { currentQ--; renderQuestion(); } }
+
+        function nextQuestion() {
+            if (answers[currentQ] === null) return;
+            if (currentQ < 19) { currentQ++; renderQuestion(); }
+            else { showResult(); }
+        }
+
+        function calculateResult() {
+            const scores = {'被动响应型':0,'过度承诺型':0,'内耗努力型':0,'客户伙伴型':0};
+            const dimensionScores = new Array(10).fill(0).map(() => ({'被动响应型':0,'过度承诺型':0,'内耗努力型':0,'客户伙伴型':0}));
+
+            questions.forEach((q,idx) => {
+                if (answers[idx] === null) return;
+                const type = q.options[answers[idx]].type;
+                scores[type] += 1;
+                dimensionScores[dimensionMap[q.num]][type] += 1;
+            });
+
+            let maxScore = -1, mainType = '客户伙伴型';
+            for (const [type,score] of Object.entries(scores)) {
+                if (score > maxScore) { maxScore = score; mainType = type; }
+            }
+
+            const dimensionDominant = dimensionScores.map(ds => {
+                let max=-1, dom='客户伙伴型';
+                for (const [t,s] of Object.entries(ds)) { if (s>max) { max=s; dom=t; } }
+                return dom;
+            });
+
+            const sortedScores = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+
+            return { scores, mainType, dimensionScores, dimensionDominant, sortedScores, maxScore };
+        }
+
+        function showResult() {
+            const result = calculateResult();
+            lastResult = result;
+            const p = personalities[result.mainType];
+
+            document.getElementById('resultHero').innerHTML = `
+                <div class="result-type-zh">${result.mainType}PD</div>
+                <div class="result-type-en">${p.en}</div>
+                <div class="result-quote">${p.quote}</div>
+            `;
+
+            const content = document.getElementById('resultContent');
+            content.innerHTML = `
+                <div class="result-section" style="animation-delay:0.1s">
+                    <div class="result-section-title">人格画像</div>
+                    <div class="result-section-text">${p.desc}</div>
+                </div>
+                <div class="result-section" style="animation-delay:0.2s">
+                    <div class="result-section-title">你的优势</div>
+                    <div class="result-section-text">${p.advantage}</div>
+                </div>
+                <div class="result-section" style="animation-delay:0.3s">
+                    <div class="result-section-title">你的风险</div>
+                    <div class="result-section-text">${p.risk}</div>
+                </div>
+                <div class="result-section" style="animation-delay:0.4s">
+                    <div class="result-section-title">进化方向</div>
+                    <div class="result-section-text">${p.evolve}</div>
+                </div>
+                <div class="result-section" style="animation-delay:0.5s">
+                    <div class="result-section-title">四维得分</div>
+                    <div class="score-bars">
+                        ${result.sortedScores.map(([type,score]) => {
+                            const key = type==='被动响应型'?'echoer':type==='过度承诺型'?'pleaser':type==='内耗努力型'?'soloer':'partner';
+                            const pct = Math.round(score/20*100);
+                            return `<div class="score-bar-item"><div class="score-bar-label">${type}</div><div class="score-bar-track"><div class="score-bar-fill ${key}" style="width:0%" data-width="${pct}%"></div></div><div class="score-bar-value">${score}</div></div>`;
+                        }).join('')}
+                    </div>
+                </div>
+                <div class="result-section" style="animation-delay:0.6s">
+                    <div class="result-section-title">十维雷达</div>
+                    <div class="radar-area">
+                        <svg class="radar-chart" viewBox="0 0 280 280">${generateRadarSVG(result.dimensionDominant)}</svg>
+                    </div>
+                    <div class="dimension-tags">
+                        ${dimensionNames.map((name,i) => {
+                            const dom = result.dimensionDominant[i];
+                            const color = dom==='客户伙伴型'?'#056E50':dom==='过度承诺型'?'#D97706':dom==='内耗努力型'?'#DB2777':'#6B7280';
+                            return `<span class="dimension-tag-item" style="color:${color};background:${color}15">${name}·${dom.replace('型','')}</span>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            showPage('resultPage');
+            setTimeout(() => {
+                document.querySelectorAll('.score-bar-fill').forEach(bar => { bar.style.width = bar.dataset.width; });
+            }, 300);
+        }
+
+        function generateRadarSVG(dominant) {
+            const cx=140, cy=140, r=95;
+            const colors = {'客户伙伴型':'#056E50','过度承诺型':'#D97706','内耗努力型':'#DB2777','被动响应型':'#6B7280'};
+            let svg = '';
+            for (let i=1;i<=4;i++) {
+                const radius=(r/4)*i; let pts='';
+                for (let j=0;j<10;j++) {
+                    const angle=(Math.PI*2/10)*j-Math.PI/2;
+                    pts += `${cx+radius*Math.cos(angle)},${cy+radius*Math.sin(angle)} `;
+                }
+                svg += `<polygon points="${pts}" fill="none" stroke="rgba(5,110,80,0.08)" stroke-width="1"/>`;
+            }
+            for (let j=0;j<10;j++) {
+                const angle=(Math.PI*2/10)*j-Math.PI/2;
+                svg += `<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(angle)}" y2="${cy+r*Math.sin(angle)}" stroke="rgba(5,110,80,0.08)" stroke-width="1"/>`;
+            }
+            let dataPts='';
+            for (let j=0;j<10;j++) {
+                const angle=(Math.PI*2/10)*j-Math.PI/2;
+                const type=dominant[j];
+                const score=type==='客户伙伴型'?1:type==='过度承诺型'?0.65:type==='内耗努力型'?0.35:0.15;
+                dataPts += `${cx+r*score*Math.cos(angle)},${cy+r*score*Math.sin(angle)} `;
+            }
+            svg += `<polygon points="${dataPts}" fill="rgba(0,230,220,0.12)" stroke="#056E50" stroke-width="2"/>`;
+            for (let j=0;j<10;j++) {
+                const angle=(Math.PI*2/10)*j-Math.PI/2;
+                const type=dominant[j];
+                const color=colors[type]||'#056E50';
+                const x=cx+(r+16)*Math.cos(angle);
+                const y=cy+(r+16)*Math.sin(angle);
+                const shortName=dimensionNames[j].substring(0,2);
+                svg += `<text x="${x}" y="${y}" fill="${color}" font-size="11" text-anchor="middle" dominant-baseline="middle" font-weight="600">${shortName}</text>`;
+            }
+            return svg;
+        }
+
+        function generateCopyText() {
+            if (!lastResult) return '';
+            const result = lastResult;
+            const p = personalities[result.mainType];
+            const lines = [
+                `🎯 我的PDTI测评结果：${result.mainType}PD · ${p.en}`,
+                ``,
+                `💬 ${p.quote}`,
+                ``,
+                `📊 四维得分：`,
+                ...result.sortedScores.map(([type,score]) => `   ${type}：${score}分`),
+                ``,
+                `✅ 我的优势：`,
+                p.advantage,
+                ``,
+                `⚠️ 我的风险：`,
+                p.risk.replace(/<[^>]+>/g, ''),
+                ``,
+                `🚀 进化方向：`,
+                p.evolve.replace(/<[^>]+>/g, ''),
+                ``,
+                `---`,
+                `来测测你是哪种客户PD 👇`,
+                window.location.href
+            ];
+            return lines.join('\n');
+        }
+
+        function copyResultText() {
+            const text = generateCopyText();
+            const textarea = document.getElementById('copyTextarea');
+            textarea.value = text;
+            document.getElementById('copyModal').classList.add('active');
+        }
+
+        function closeCopyModal(e) {
+            if (!e || e.target.id === 'copyModal') {
+                document.getElementById('copyModal').classList.remove('active');
+            }
+        }
+
+        function doCopy() {
+            const textarea = document.getElementById('copyTextarea');
+            textarea.select();
+            document.execCommand('copy');
+            closeCopyModal();
+            showToast('文案已复制到剪贴板！');
+        }
+
+        function shareResult() {
+            const text = generateCopyText();
+            if (navigator.share) {
+                navigator.share({title:'PDTI人格测评',text:text,url:window.location.href}).catch(()=>{});
+            } else {
+                navigator.clipboard.writeText(text).then(()=>{showToast('结果已复制到剪贴板');});
+            }
+        }
+
+        function restartQuiz() { currentQ=0; answers=new Array(20).fill(null); lastResult=null; showPage('homePage'); }
+
+        function showToast(msg) {
+            const toast=document.getElementById('toast');
+            toast.textContent=msg; toast.classList.add('show');
+            setTimeout(()=>toast.classList.remove('show'),2500);
+        }
+
+        initParticles();
+    </script>
+</body>
+</html>
